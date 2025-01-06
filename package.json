@@ -10,6 +10,7 @@
   "keywords": [
     "ecosystem:cordova"
   ],
+  "types": "./types",
   "author": "Apache Cordova Team",
   "license": "Apache-2.0",
   "devDependencies": {
@@ -23,5 +24,8 @@
     "platforms": [
       "android"
     ]
+  },
+  "dependencies": {
+    "dotenv-webpack": "^8.1.0"
   }
 }

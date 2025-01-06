@@ -1,7 +1,7 @@
 const path = require('path')
-const {EnvironmentPlugin} = require('webpack');
+const dotenv = require('dotenv-webpack');
 
-module.exports = {
+module.exports = () => ({
     mode: 'development',
     entry: './src/index.js',
     output: {
@@ -16,8 +16,8 @@ module.exports = {
     },
     plugins: [
         // Defined environment variables
-        new EnvironmentPlugin({
-
+        new dotenv({
+            path: './.env'
         }),
     ],
     module: {
@@ -33,4 +33,4 @@ module.exports = {
         ]
     },
     devtool: 'inline-source-map'
-}
+});
