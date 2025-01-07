@@ -27,3 +27,9 @@ type RouteDefinition = {
 type Route = RouteDefinition & {
   instance: unknown
 }
+
+type CaseType = (
+  | 'PascalCase'
+  | 'CamelCase'
+  | 'SnakeCase'
+)

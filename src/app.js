@@ -1,13 +1,128 @@
 import {default as routeDefs} from "@/routes";
+import Container from "@/app/Container";
 
 /** @type {AppConfig} */
 const DEFAULT_CONFIG = {
     selector: '',
 };
 
+const RESERVED_ATTR_BINDINGS = {
+    acceptCharset: 'accept-charset',
+    autoCapitalize: 'autocapitalize',
+    autoComplete: 'autocomplete',
+    autoFocus: 'autofocus',
+    className: 'class',
+    fillOpacity: 'fill-opacity',
+    htmlFor: 'for',
+    readOnly: 'readonly',
+    strokeWidth: 'stroke-width',
+    tabIndex: 'tabindex',
+    viewBox: 'viewbox',
+}
+
+const RESERVED_ARIA_ATTR_BINDINGS = {
+    ariaActiveDescendant: 'aria-activedescendant',
+    ariaAutoComplete: 'aria-autocomplete',
+    ariaColCount: 'aria-colcount',
+    ariaColIndex: 'aria-colindex',
+    ariaColSpan: 'aria-colspan',
+    ariaDescribedBy: 'aria-describedby',
+    ariaDropEffect: 'aria-dropeffect',
+    ariaErrorMessage: 'aria-errormessage',
+    ariaFlowTo: 'aria-flowto',
+    ariaHasPopUp: 'aria-haspopup',
+    ariaKey: 'aria-keyshortcuts',
+    ariaLabelledBy: 'aria-labelledby',
+    ariaMultiLine: 'aria-multiline',
+    ariaMultiSelectable: 'aria-multiselectable',
+    ariaPosInSet: 'aria-posinset',
+    ariaReadOnly: 'aria-readonly',
+    ariaRoleDescription: 'aria-roledescription',
+    ariaRowCount: 'aria-rowcount',
+    ariaRowIndex: 'aria-rowindex',
+    ariaRowSpan: 'aria-rowspan',
+    ariaSetSize: 'aria-setsize',
+    ariaValueMax: 'aria-valuemax',
+    ariaValueMin: 'aria-valuemin',
+    ariaValueNow: 'aria-valuenow',
+    ariaValueText: 'aria-valuetext',
+}
+
 // window.onerror = (msg, url, line, col, error) => {
 //
 // }
+
+/**
+ * Checks if text is capitalized.
+ *
+ * @param {string} text
+ * @returns {boolean}
+ */
+const isCapitalized = (text) => {
+    let [first, ...others] = [...text];
+    others = others.join('');
+
+    return first === first.toUpperCase() && others === others.toLowerCase();
+};
+
+/**
+ * Convert text to capitalized text.
+ *
+ * @param {string} text
+ */
+const capitalize = (text) => {
+    return text.charAt(0).toUpperCase() + text.slice(1);
+}
+
+/**
+ * Convert text to slug format.
+ *
+ * @param {string} text
+ */
+const slug = (text) => {
+    if (isCapitalized(text)) {
+        text = text.charAt(0).toLowerCase() + text.slice(1);
+    }
+
+    const tokens = text.split(/(?=[A-Z])/);
+
+    /** @type {string} */
+    let slug;
+
+    slug = tokens.reduce((result, token) => {
+        return result + token.toLowerCase() + '-'
+    }, '');
+
+    if (slug.length > 0) {
+        slug = slug.slice(0, slug.length - 1);
+    }
+
+    return slug;
+}
+
+/**
+ * Converts a slug text to certain case type text.
+ *
+ * @param {string} slug
+ * @param {CaseType} type
+ */
+const unslug = (slug, type= 'PascalCase') => {
+    const tokens = slug.split(/-/g);
+
+    let text = tokens.reduce((result, token, index) => {
+        if (type === 'CamelCase' && index === 0) {
+            return result + token.toLowerCase();
+        }
+
+        return result + (type === 'SnakeCase' ? token.toLowerCase() + '-' : capitalize(token));
+    }, '');
+
+    if (type === 'SnakeCase') {
+        text = text.slice(0, text.length - 1);
+    }
+
+    return text;
+}
 
 /**
  *
@@ -17,11 +132,15 @@ const DEFAULT_CONFIG = {
 const initApp = (config) => {
     /** @type {HTMLDivElement|null} */
     const container = document.querySelector(config.selector);
-    const navigation = createNavigation();
+    // const navigation = createNavigation(this);
 
     if (!container) {
         throw new Error(`Could not find the container with selector "${config.selector}"!`);
     }
+
+    (() => {
+        container.appendChild(Container());
+    })();
 
     return {}
 };
@@ -46,6 +165,11 @@ const createNavigation = (application) => {
         if (!Array.isArray(routeDefs) || routeDefs.length === 0) {
             throw new Error('There should be at least one route defined in "src/routes.js"!');
         }
+
+        routes = routeDefs.map(routeDef => ({
+            ...routeDef,
+            instance: null
+        }))
     })();
 
     /**
@@ -171,6 +295,81 @@ const createNavigation = (application) => {
             history = [];
         }
     }
+}
+
+/**
+ * Checks if attribute is part of HTML element.
+ *
+ * @param {HTMLElement} element
+ * @param {string} attrName
+ */
+const checkElementAttr = (element, attrName) => {
+    const findAriaKey = (ariaAttrName) => {
+        const foundEntry = Object.entries(RESERVED_ARIA_ATTR_BINDINGS).find(([_, value]) => {
+            return value === ariaAttrName;
+        });
+
+        return foundEntry ? foundEntry[0] : '';
+    }
+
+    if (attrName.startsWith('on') && attrName.toLowerCase() in element) {
+        return true;
+    }
+
+    if (attrName.startsWith('aria-') && findAriaKey(attrName) in element) {
+        return true;
+    } else if (attrName.startsWith('aria-') && unslug(attrName, 'CamelCase') in element) {
+        return true;
+    }
+
+    return attrName.startsWith('data-') || attrName in element;
+}
+
+const resolveElementAttrs = (element, props) => {
+    Object.entries(props).forEach(([key, value]) => {
+        if (!checkElementAttr(element, key)) {
+            return;
+        }
+
+        let attrName = key;
+
+        if (Object.keys(RESERVED_ATTR_BINDINGS).includes(attrName)) {
+            attrName = RESERVED_ATTR_BINDINGS[key];
+        }
+
+        if (attrName.startsWith('on')) {
+            element.addEventListener(attrName.slice(2).toLowerCase(), value);
+        } else if (attrName.startsWith('data-')) {
+            const dataKey = unslug(attrName.slice(5), 'CamelCase');
+            element.dataset[dataKey] = '' + value;
+        } else {
+            element.setAttribute(attrName, value);
+        }
+    });
+}
+
+export const createElement = (tag, props, ...children) => {
+    let element;
+
+    if (typeof tag === 'function') {
+        element = tag();
+    } else {
+        element = document.createElement(tag);
+    }
+
+    if (props) {
+        resolveElementAttrs(element, props);
+    }
+
+    children.forEach((child) => {
+        if (typeof child === 'string' || typeof child === 'number') {
+            element.appendChild(document.createTextNode(child));
+        } else if (child instanceof Node) {
+            element.appendChild(child);
+        }
+    });
+
+    return element;
 }
 
 /**
