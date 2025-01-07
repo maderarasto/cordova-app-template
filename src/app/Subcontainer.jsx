@@ -1,9 +1,9 @@
 import {createElement} from "@/app";
 
-const Subcontainer = () => {
+const Subcontainer = (props) => {
+
     return <div className="subcontainer" onClick={() => console.log('click')}>
-        <form aria-checked={true} aria-colindex={5} data-id={24}></form>
-        <input type="text" aria-valuemin={25} aria-checked={false} />
+        {props.children}
     </div>;
 }
 

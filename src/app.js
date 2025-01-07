@@ -349,24 +349,30 @@ const resolveElementAttrs = (element, props) => {
 }
 
 export const createElement = (tag, props, ...children) => {
-    let element;
-
     if (typeof tag === 'function') {
-        element = tag();
-    } else {
-        element = document.createElement(tag);
+        return tag({ ...props, children })
     }
+
+    const element = document.createElement(tag);
 
     if (props) {
         resolveElementAttrs(element, props);
     }
 
     children.forEach((child) => {
+        let nestedChildren = [];
+
         if (typeof child === 'string' || typeof child === 'number') {
             element.appendChild(document.createTextNode(child));
         } else if (child instanceof Node) {
-            element.appendChild(child);
+            nestedChildren = [child];
+        } else if (Array.isArray(child)) {
+            nestedChildren = child;
         }
+
+        nestedChildren.forEach((child) => {
+            element.appendChild(child);
+        })
     });
 
     return element;
