@@ -1,5 +1,6 @@
 import {default as routeDefs} from "@/routes";
-import Container from "@/app/Container";
+import App from "@/app/App";
+import app from "@/app/App";
 
 /** @type {AppConfig} */
 const DEFAULT_CONFIG = {
@@ -131,15 +132,28 @@ const unslug = (slug, type= 'PascalCase') => {
  */
 const initApp = (config) => {
     /** @type {HTMLDivElement|null} */
-    const container = document.querySelector(config.selector);
+    const root = document.querySelector(config.selector);
     // const navigation = createNavigation(this);
 
-    if (!container) {
+    if (!root) {
         throw new Error(`Could not find the container with selector "${config.selector}"!`);
     }
 
     (() => {
-        container.appendChild(Container());
+        const appContent = App();
+        let nodes = [];
+
+        if (Array.isArray(appContent)) {
+            nodes = appContent;
+        } else {
+            nodes = [appContent];
+        }
+
+        nodes.forEach((node) => {
+            if (node instanceof Node) {
+                root.appendChild(node)
+            }
+        });
     })();
 
     return {}
@@ -349,9 +363,15 @@ const resolveElementAttrs = (element, props) => {
 }
 
 export const createElement = (tag, props, ...children) => {
+    if (tag === null || tag === 'FRAGMENT') {
+        return children.flat();
+    }
+
     if (typeof tag === 'function') {
         return tag({ ...props, children })
     }
+
+    console.log(props, children);
 
     const element = document.createElement(tag);
 
