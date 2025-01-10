@@ -17,19 +17,17 @@
  * under the License.
  */
 
-// Wait for the deviceready event before using any of Cordova's device APIs.
-// See https://cordova.apache.org/docs/en/latest/cordova/events/events.html#deviceready
-// document.addEventListener('deviceready', onDeviceReady, false);
-//
-// function onDeviceReady() {
-//     // Cordova is now initialized. Have fun!
-//
-//     console.log('Running cordova-' + cordova.platformId + '@' + cordova.version);
-//     document.getElementById('deviceready').classList.add('ready');
-// }
+// router.navigate('/');
+// router.navigate('dashboard');
+// router.navigate('/profile/edit');
+// router.navigate('/connections');
+// router.navigate('/connections/23');
 
-import {createApp} from "@/app";
+import './core/setup';
+import {CordovaApp} from "@/core";
+import App from "@/app/App";
 
-createApp({
-    selector: '#app',
+new CordovaApp({
+  selector: '#app',
+  component: <App />
 });

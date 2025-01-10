@@ -1,9 +1,9 @@
-import {createElement} from "@/app";
+import Container from "@/app/Container";
 
 const App = () => {
   return (
     <>
-      <h1>Hello to Cordova!</h1>
+      <Container><h1 style="color: white">Hello to Cordova!</h1></Container>
     </>
   )
 };
