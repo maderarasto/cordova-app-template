@@ -29,5 +29,5 @@ import App from "@/app/App";
 
 new CordovaApp({
   selector: '#app',
-  component: <App />
+  component: App(),
 });
