@@ -1,4 +1,3 @@
-import {JSX} from "@/core";
 import Container from "@/app/Container";
 
 const App = () => {

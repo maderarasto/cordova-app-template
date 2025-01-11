@@ -1,5 +1,3 @@
-import {JSX} from "@/core";
-
 const Container = ({children}, context) => {
   console.log(context);
   return (
