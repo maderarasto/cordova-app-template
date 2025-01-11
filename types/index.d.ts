@@ -10,7 +10,7 @@ type CaseType = (
 type AppConfig = {
   selector: string
   component: ElementNode
-  // router?: Router
+  router: Object
 }
 
 /** Start of Router defined types */
@@ -20,7 +20,7 @@ type RouterConfig = {
 
 type RouteRecord = {
   path: string
-  component: ElementNode
+  component?: ElementNode
   name?: string
 }
 

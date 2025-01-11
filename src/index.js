@@ -23,11 +23,12 @@
 // router.navigate('/connections');
 // router.navigate('/connections/23');
 
-import './core/setup';
 import {CordovaApp} from "@/core";
 import App from "@/app/App";
+import router from "@/router";
 
 new CordovaApp({
   selector: '#app',
   component: App(),
+  router,
 });
