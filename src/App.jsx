@@ -1,5 +1,4 @@
-import {Component} from "@/core";
-import HomeScreen from "@/app/Home";
+import {Component, RouterView} from "@/core";
 
 export default class App extends Component {
   constructor(key, props, context) {
@@ -9,7 +8,7 @@ export default class App extends Component {
   render() {
     return (
       <>
-        <HomeScreen />
+        <RouterView />
       </>
     );
   }

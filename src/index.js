@@ -25,7 +25,7 @@
 
 import {CordovaApp, JSX as JSXModule} from "@/core";
 import App from "@/App";
-// import router from "@/router";
+import router from "@/router";
 
 /** Assign JSX module to global window. */
 window.JSX = JSXModule;
@@ -33,5 +33,5 @@ window.JSX = JSXModule;
 new CordovaApp({
   selector: '#app',
   component: () => <App />,
-  // router,
+  router,
 });

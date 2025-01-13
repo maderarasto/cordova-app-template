@@ -350,23 +350,56 @@ export class CordovaRouter {
   }
 }
 
-export const RouterView = ({options}, {router}) => {
-  const initialPath = options && options.initialPath ? options.initialPath : '';
+// export const RouterView = ({options}, {router}) => {
+//   const initialPath = options && options.initialPath ? options.initialPath : '';
+//
+//   if (!router.currentRoute) {
+//     router.navigate(initialPath);
+//     return;
+//   }
+//
+//   const routeComponent = router.findRouteComponent(
+//     router.currentRoute.path
+//   );
+//
+//   if (routeComponent) {
+//     return routeComponent();
+//   }
+//
+//   return <></>;
+// }
 
-  if (!router.currentRoute) {
-    router.navigate(initialPath);
-    return;
+export class RouterView extends Component {
+  constructor(key, props, context) {
+    super(key, props, context);
   }
 
-  const routeComponent = router.findRouteComponent(
-    router.currentRoute.path
-  );
+  didMount() {
+    const initialPath = this.props.options && this.props.options.initialPath
+      ? this.props.options.initialPath : '';
 
-  if (routeComponent) {
-    return routeComponent();
+    if (!this.context.router.currentRoute) {
+      this.context.router.navigate(initialPath);
+    }
   }
 
-  return <></>;
+  render() {
+    const currentRoute = this.context.router.currentRoute;
+    const routeComponentFn = currentRoute
+      ? this.context.router.findRouteComponent(currentRoute.path)
+      : null;
+
+    return (
+      <>
+        <div className="header">
+
+        </div>
+        <div className="main">
+          {routeComponentFn ? routeComponentFn() : ''}
+        </div>
+      </>
+    )
+  }
 }
 
 export class CordovaApp {
