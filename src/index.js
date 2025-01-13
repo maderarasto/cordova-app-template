@@ -24,14 +24,14 @@
 // router.navigate('/connections/23');
 
 import {CordovaApp, JSX as JSXModule} from "@/core";
-import App from "@/app/App";
-import router from "@/router";
+import App from "@/App";
+// import router from "@/router";
 
 /** Assign JSX module to global window. */
 window.JSX = JSXModule;
 
 new CordovaApp({
   selector: '#app',
-  component: App(),
-  router,
+  component: () => <App />,
+  // router,
 });

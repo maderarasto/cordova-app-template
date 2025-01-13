@@ -46,6 +46,12 @@ const AppContext = {
   router: null
 }
 
+/**
+ *
+ * @type {CordovaApp|null}
+ */
+let app = null;
+
 export const JSX = (() => {
   const checkElementAttribute = (element, attributeName) => {
     const findAriaKey = (ariaAttrName) => {
@@ -94,12 +100,24 @@ export const JSX = (() => {
 
   return {
     createElement: (tag, props, ...children) => {
+      if (!app) {
+        throw new Error('Missing instance of application!');
+      }
+
       if (tag === null || tag === 'FRAGMENT') {
         return children.flat();
       }
 
       if (typeof tag === 'function') {
-        return tag({...props, children}, AppContext);
+        const component = app.registerComponent(tag, {
+          ...props,
+          children
+        }, AppContext);
+
+        // Additional processing
+        component.didMount();
+
+        return component.render();
       }
 
       const element = document.createElement(tag);
@@ -129,6 +147,27 @@ export const JSX = (() => {
   };
 })();
 
+export class Component {
+  constructor(key, props, context) {
+    this.props = props;
+    this.context = context;
+
+    // Assign a unique key to pass to JSX
+    this.props['key'] = key;
+  }
+
+  didMount() {}
+
+  /**
+   * Returns JSX view of component.
+   *
+   * @returns {ElementNode}
+   */
+  render() {
+    return null;
+  }
+}
+
 export class CordovaRouter {
   /**
    *
@@ -148,25 +187,17 @@ export class CordovaRouter {
   /**
    * Gets a current route in router.
    *
-   * @returns {RouteInfo}
+   * @returns {RouteInfo|null}
    */
   get currentRoute() {
-    if (history.length === 0) {
-      throw new Error('Router shouldn\'t be empty!');
-    }
-
-    return history[history.length - 1];
+    return this._history.length > 0 ? this._history[this._history.length - 1] : null;
   }
 
   /**
    * Gets a previous route in router. If there is only one route it will return undefined;
    */
   get prevRoute() {
-    if (history.length === 0) {
-      throw new Error('Router shouldn\'t be empty!');
-    }
-
-    return history[history.length - 2];
+    return this._history.length > 1 ? this._history[this._history.length - 2] : null;
 
   }
 
@@ -180,6 +211,21 @@ export class CordovaRouter {
   }
 
   /**
+   * Finds a component of route based on given path.
+   *
+   * @param {string} path
+   */
+  findRouteComponent(path) {
+    const route = this._findRoute(path);
+
+    if (!route) {
+      return null
+    }
+
+    return route.component;
+  }
+
+  /**
    * Navigates
    * @param path
    */
@@ -189,10 +235,17 @@ export class CordovaRouter {
     if (!route) {
       throw new Error(`Could not find a registered route with href "${path}"`);
     }
-    console.log(route);
-    // TODO: create instance of route component
-    // TODO: push route into history
-    // TODO: request application to update render
+
+    this._history.push({
+      path: route.path,
+      name: route.name,
+    });
+
+    if (!this._app) {
+      throw new Error('Router isn\'t attached to application!');
+    }
+
+    this._app.update();
   }
 
   /**
@@ -207,11 +260,17 @@ export class CordovaRouter {
       throw new Error(`Could not find a registered route with href "${path}"`);
     }
 
-    // TODO: destroy current instance
-    // TODO: pop route from history
-    // TODO: create instance of route component
-    // TODO: push route into history
-    // TODO: request application to update render
+    this._history.pop();
+    this._history.push({
+      path: route.path,
+      name: route.name,
+    });
+
+    if (!this._app) {
+      throw new Error('Router isn\'t attached to application!');
+    }
+
+    this._app.update();
   }
 
   /**
@@ -220,19 +279,22 @@ export class CordovaRouter {
    * @param path
    */
   reset(path) {
+    this._history = [];
 
+    if (path) {
+      this.navigate(path);
+    }
   }
 
   goBack() {
     if (!this.prevRoute) {
-      // TODO: request app to close application
+      this._app.close();
       return;
     }
 
-    // TODO: destroy current instance
-    // TODO: pop route from history
+    this._history.pop();
     // TODO: trigger onPrevRoute event on previous route component
-    // TODO: request app to update render
+    this._app.update();
   }
 
   /**
@@ -288,6 +350,25 @@ export class CordovaRouter {
   }
 }
 
+export const RouterView = ({options}, {router}) => {
+  const initialPath = options && options.initialPath ? options.initialPath : '';
+
+  if (!router.currentRoute) {
+    router.navigate(initialPath);
+    return;
+  }
+
+  const routeComponent = router.findRouteComponent(
+    router.currentRoute.path
+  );
+
+  if (routeComponent) {
+    return routeComponent();
+  }
+
+  return <></>;
+}
+
 export class CordovaApp {
 
   /**
@@ -296,6 +377,9 @@ export class CordovaApp {
    * @param {AppConfig} config
    */
   constructor(config) {
+    this._components = new Map();
+    this._keyCount = 0;
+
     if (!config || typeof config !== 'object') {
       throw new Error('Missing required AppConfig object!');
     }
@@ -309,15 +393,48 @@ export class CordovaApp {
     }
 
     document.addEventListener('deviceready', this.onCordovaReady.bind(this, config));
+
+    // Store instance of app to variable in scope of this script.
+    app = this;
   }
 
-  render() {
-    let nodes;
 
-    if (Array.isArray(this._component)) {
-      nodes = this._component;
+
+  /**
+   *
+   * @param {Function} componentFn
+   * @param props
+   * @param context
+   */
+  registerComponent(componentFn, props, context) {
+    let componentKey = props.key;
+
+    if (componentKey && this._components.has(componentKey)) {
+      return this._components.get(componentKey).render();
     } else {
-      nodes = [this._component];
+      componentKey = this._getNewKey();
+    }
+
+    const component = new componentFn(componentKey, props, context);
+    this._components.set(componentKey, component);
+
+    // Additional process of component
+
+    return component;
+  }
+
+  async update() {
+    await this.render();
+  }
+
+  async render() {
+    let nodes;
+    const content = this._root();
+
+    if (Array.isArray(content)) {
+      nodes = content;
+    } else {
+      nodes = content;
     }
 
     if (this._rootEl.children.length > 0) {
@@ -329,6 +446,19 @@ export class CordovaApp {
         this._rootEl.appendChild(node)
       }
     });
+
+    // TODO: trigger mount event
+  }
+
+  close() {
+    navigator.app.exitApp();
+  }
+
+  _getNewKey() {
+    const incrementStr = (++this._keyCount).toString();
+    const paddedNum = incrementStr.padStart(5, '0');
+
+    return btoa(paddedNum).toString();
   }
 
   onCordovaReady(config) {
@@ -339,8 +469,8 @@ export class CordovaApp {
       throw new Error(`Could not find the container with selector "${config.selector}"!`);
     }
 
-    /** @type {ElementNode} */
-    this._component = config.component;
+    /** @type {() => ElementNode} */
+    this._root = config.component;
 
     if (config.router) {
       AppContext.router = config.router;
