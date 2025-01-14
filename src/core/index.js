@@ -11,7 +11,7 @@ const RESERVED_ATTR_BINDINGS = {
   readOnly: 'readonly',
   strokeWidth: 'stroke-width',
   tabIndex: 'tabindex',
-  viewBox: 'viewbox',
+  viewBox: 'viewBox',
 }
 
 const RESERVED_ARIA_ATTR_BINDINGS = {
@@ -42,6 +42,21 @@ const RESERVED_ARIA_ATTR_BINDINGS = {
   ariaValueText: 'aria-valuetext',
 }
 
+const SVG_NAMESPACE = 'http://www.w3.org/2000/svg';
+const SVG_CHILD_TAGS = {
+  structural: [ "defs", "g", "symbol", "use", "svg", "switch" ],
+  graphics: [ "circle", "ellipse", "line", "path", "polygon", "polyline", "rect", "text", "tspan", "textPath", "image",
+    "foreignObject" ],
+  descriptive: [ "desc", "title" ],
+  gradientAndColor: [ "linearGradient", "radialGradient", "stop", "pattern", "clipPath", "mask", "filter", "feBlend",
+    "feColorMatrix", "feComponentTransfer", "feComposite", "feConvolveMatrix", "feDiffuseLighting", "feDisplacementMap",
+    "feDistantLight", "feDropShadow", "feFlood", "feFuncA", "feFuncB", "feFuncG", "feFuncR", "feGaussianBlur", "feImage",
+    "feMerge", "feMergeNode", "feMorphology", "feOffset", "fePointLight", "feSpecularLighting", "feSpotLight", "feTile",
+    "feTurbulence" ],
+  animationAndInteraction: [ "animate", "animateMotion", "animateTransform", "discard", "mpath", "set" ],
+  scripting: [ "script" ]
+};
+
 const AppContext = {
   router: null
 }
@@ -53,7 +68,7 @@ const AppContext = {
 let app = null;
 
 export const JSX = (() => {
-  const checkElementAttribute = (element, attributeName) => {
+  const checkElementAttribute = (tag, element, attributeName) => {
     const findAriaKey = (ariaAttrName) => {
       const foundEntry = Object.entries(RESERVED_ARIA_ATTR_BINDINGS).find(([_, value]) => {
         return value === ariaAttrName;
@@ -70,14 +85,16 @@ export const JSX = (() => {
       return true;
     } else if (attributeName.startsWith('aria-') && unslug(attributeName, 'CamelCase') in element) {
       return true;
+    } else if (tag === 'svg' || Object.values(SVG_CHILD_TAGS).flat().includes(tag)) {
+      return true;
     }
 
     return attributeName.startsWith('data-') || attributeName in element;
   }
 
-  const resolveElementAttributes = (element, props) => {
+  const resolveElementAttributes = (tag, element, props) => {
     Object.entries(props).forEach(([key, value]) => {
-      if (!checkElementAttribute(element, key)) {
+      if (!checkElementAttribute(tag, element, key)) {
         return;
       }
 
@@ -120,10 +137,14 @@ export const JSX = (() => {
         return component.render();
       }
 
-      const element = document.createElement(tag);
+      let element = document.createElement(tag);
+
+      if (tag === 'svg' || Object.values(SVG_CHILD_TAGS).flat().includes(tag)) {
+        element = document.createElementNS(SVG_NAMESPACE, tag);
+      }
 
       if (props) {
-        resolveElementAttributes(element, props);
+        resolveElementAttributes(tag, element, props);
       }
 
       children.forEach((child) => {
@@ -391,13 +412,81 @@ export class RouterView extends Component {
 
     return (
       <>
-        <div className="header">
-
-        </div>
+        <RouterView.Header options={{
+          headerTitle: 'Router',
+          headerLeft: () => (
+            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 320 512" width={24} height={24} fill="#fff">
+              <path
+                d="M41.4 233.4c-12.5 12.5-12.5 32.8 0 45.3l160 160c12.5 12.5 32.8 12.5 45.3 0s12.5-32.8 0-45.3L109.3 256 246.6 118.6c12.5-12.5 12.5-32.8 0-45.3s-32.8-12.5-45.3 0l-160 160z"/>
+            </svg>
+          )
+        }}/>
         <div className="main">
           {routeComponentFn ? routeComponentFn() : ''}
         </div>
       </>
+    )
+  }
+}
+
+RouterView.Header = class extends Component {
+  constructor(key, props, context) {
+    super(key, props, context);
+  }
+
+  render() {
+    const resolveTitle = () => {
+      const headerTitle = this.props.options && this.props.options.headerTitle
+        ? this.props.options.headerTitle
+        : null;
+
+      if (!headerTitle) {
+        return '';
+      }
+
+      return typeof headerTitle === 'function' ? headerTitle() : (
+        <span style="font-size: 20px; font-weight: 600; color: white">
+          {headerTitle}
+        </span>
+      );
+    }
+
+    const resolveHeaderLeft = () => {
+      const headerLeft = this.props.options && this.props.options.headerLeft
+        ? this.props.options.headerLeft
+        : null;
+
+      if (headerLeft && typeof headerLeft === 'function') {
+        return headerLeft();
+      }
+
+      return null;
+    }
+
+    const resolveHeaderRight = () => {
+      const headerRight = this.props.options && this.props.options.headerRight
+        ? this.props.options.headerRight
+        : null;
+
+      if (headerRight && typeof headerRight === 'function') {
+        return headerRight();
+      }
+
+      return null;
+    }
+
+    if (this.props.options && this.props.options.headerShown === false) {
+      return null;
+    }
+
+    return (
+      <div style="display: flex; flex-direction: row; justify-content: space-between; align-items: center; width: 100%; height: 70px; padding-inline: 16px; background: black;">
+        {/* Left side of header */}
+        <div>{resolveHeaderLeft()}</div>
+        <div>{resolveTitle()}</div>
+        {/* Right side of header */}
+        <div>{resolveHeaderRight()}</div>
+      </div>
     )
   }
 }
