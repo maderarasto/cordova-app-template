@@ -8,4 +8,7 @@
     <content src="index.html" />
     <allow-intent href="http://*/*" />
     <allow-intent href="https://*/*" />
+
+    <!-- Preferences -->
+    <preference name="StatusBarOverlaysWebView" value="false" />
 </widget>

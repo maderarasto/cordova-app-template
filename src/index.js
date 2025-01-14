@@ -17,13 +17,21 @@
  * under the License.
  */
 
-// Wait for the deviceready event before using any of Cordova's device APIs.
-// See https://cordova.apache.org/docs/en/latest/cordova/events/events.html#deviceready
-document.addEventListener('deviceready', onDeviceReady, false);
+// router.navigate('/');
+// router.navigate('dashboard');
+// router.navigate('/profile/edit');
+// router.navigate('/connections');
+// router.navigate('/connections/23');
 
-function onDeviceReady() {
-    // Cordova is now initialized. Have fun!
+import {CordovaApp, JSX as JSXModule} from "@/core";
+import App from "@/App";
+import router from "@/router";
 
-    console.log('Running cordova-' + cordova.platformId + '@' + cordova.version);
-    document.getElementById('deviceready').classList.add('ready');
-}
+/** Assign JSX module to global window. */
+window.JSX = JSXModule;
+
+new CordovaApp({
+  selector: '#app',
+  component: () => <App />,
+  router,
+});
