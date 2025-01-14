@@ -48,3 +48,11 @@ body, body > #app, #app * {
 #app, #app > .main {
     flex: 1;
 }
+
+.press-opacity {
+    transition: opacity 0.15s ease-in-out;
+
+    &:active {
+        opacity: 0.5;
+    }
+}

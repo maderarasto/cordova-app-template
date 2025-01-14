@@ -18,12 +18,14 @@
     "@babel/core": "^7.26.0",
     "@babel/preset-env": "^7.26.0",
     "cordova-android": "^13.0.0",
+    "cordova-plugin-statusbar": "^4.0.0",
     "cordova-plugin-webpack": "^1.0.5",
     "sass": "^1.83.1"
   },
   "cordova": {
     "plugins": {
-      "cordova-plugin-webpack": {}
+      "cordova-plugin-webpack": {},
+      "cordova-plugin-statusbar": {}
     },
     "platforms": [
       "android"

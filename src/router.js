@@ -1,5 +1,6 @@
 import {CordovaRouter, JSX} from "@/core";
 import Home from "@/app/Home";
+import AboutScreen from "@/app/About";
 
 const router = new CordovaRouter({
   routes: [
@@ -7,6 +8,10 @@ const router = new CordovaRouter({
       path: '/',
       component: () => <Home />,
     },
+    {
+      path: '/about',
+      component: () => <AboutScreen />
+    }
   ]
 });
 

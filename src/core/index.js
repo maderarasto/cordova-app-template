@@ -159,7 +159,11 @@ export const JSX = (() => {
         }
 
         nestedChildren.forEach((child) => {
-          element.appendChild(child);
+          if (typeof child === 'string' || typeof child === 'number') {
+            element.appendChild(document.createTextNode(child));
+          } else if (child instanceof Node) {
+            element.appendChild(child);
+          }
         })
       });
 
@@ -393,6 +397,9 @@ export class CordovaRouter {
 export class RouterView extends Component {
   constructor(key, props, context) {
     super(key, props, context);
+
+    // Register event handlers with this context.
+    this.handleBackClick = this.handleBackClick.bind(this);
   }
 
   didMount() {
@@ -404,7 +411,30 @@ export class RouterView extends Component {
     }
   }
 
+  handleBackClick() {
+    this.context.router.goBack();
+  }
+
   render() {
+    const headerShown = this.props.options && this.props.options.headerShown;
+
+    const resolveHeaderShown = () => {
+      if (!this.props.options || this.props.options.headerShown === undefined) {
+        return true;
+      }
+
+      return this.props.options.headerShown;
+    }
+
+    const resolveHeaderTitle = () => {
+      if (!this.props.options || this.props.options.headerTitle === undefined) {
+        return '';
+      }
+
+      return typeof this.props.options.headerTitle === 'function'
+        ? this.props.options.headerTitle() : this.props.options.headerTitle;
+    }
+
     const currentRoute = this.context.router.currentRoute;
     const routeComponentFn = currentRoute
       ? this.context.router.findRouteComponent(currentRoute.path)
@@ -413,13 +443,17 @@ export class RouterView extends Component {
     return (
       <>
         <RouterView.Header options={{
-          headerTitle: 'Router',
-          headerLeft: () => (
-            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 320 512" width={24} height={24} fill="#fff">
-              <path
-                d="M41.4 233.4c-12.5 12.5-12.5 32.8 0 45.3l160 160c12.5 12.5 32.8 12.5 45.3 0s12.5-32.8 0-45.3L109.3 256 246.6 118.6c12.5-12.5 12.5-32.8 0-45.3s-32.8-12.5-45.3 0l-160 160z"/>
-            </svg>
-          )
+          headerTitle: resolveHeaderTitle(),
+          headerShown: resolveHeaderShown(),
+          headerLeft: () => this.context.router.prevRoute ? (
+            <PressableOpacity>
+              <svg onClick={this.handleBackClick} xmlns="http://www.w3.org/2000/svg" viewBox="0 0 320 512" width={24}
+                   height={24} fill="#fff">
+                <path
+                  d="M41.4 233.4c-12.5 12.5-12.5 32.8 0 45.3l160 160c12.5 12.5 32.8 12.5 45.3 0s12.5-32.8 0-45.3L109.3 256 246.6 118.6c12.5-12.5 12.5-32.8 0-45.3s-32.8-12.5-45.3 0l-160 160z"/>
+              </svg>
+            </PressableOpacity>
+          ) : ''
         }}/>
         <div className="main">
           {routeComponentFn ? routeComponentFn() : ''}
@@ -474,16 +508,16 @@ RouterView.Header = class extends Component {
 
       return null;
     }
-
+    console.log(this.props);
     if (this.props.options && this.props.options.headerShown === false) {
       return null;
     }
 
     return (
-      <div style="display: flex; flex-direction: row; justify-content: space-between; align-items: center; width: 100%; height: 70px; padding-inline: 16px; background: black;">
+      <div style="position: relative; display: flex; flex-direction: row; justify-content: space-between; align-items: center; width: 100%; height: 70px; padding-inline: 16px; background: black;">
         {/* Left side of header */}
         <div>{resolveHeaderLeft()}</div>
-        <div>{resolveTitle()}</div>
+        <div style="position: absolute; top: 50%; left: 50%; transform: translate(-50%,-50%);">{resolveTitle()}</div>
         {/* Right side of header */}
         <div>{resolveHeaderRight()}</div>
       </div>
@@ -600,5 +634,40 @@ export class CordovaApp {
     }
 
     this.render();
+  }
+}
+
+// COMPONENTS
+export class PressableOpacity extends Component {
+  constructor(key, props, context) {
+    super(key, props, context);
+  }
+
+  resolveStyle() {
+    let style = '';
+
+    if (this.props.style) {
+      style += ' ' + this.props.style;
+    }
+
+    return style;
+  }
+
+  resolveClassName() {
+    let className = 'press-opacity';
+
+    if (this.props.className) {
+      className += ' ' + this.props.className;
+    }
+
+    return className;
+  }
+
+  render() {
+    return (
+      <div className={this.resolveClassName()} style={this.resolveStyle()}>
+        {this.props.children}
+      </div>
+    )
   }
 }
