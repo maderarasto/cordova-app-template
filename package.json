@@ -4,8 +4,10 @@
   "version": "1.0.0",
   "description": "A sample Apache Cordova application that responds to the deviceready event.",
   "main": "index.js",
+  "types": "./types",
   "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1"
+    "test": "echo \"Error: no test specified\" && exit 1",
+    "android": "cordova run android"
   },
   "keywords": [
     "ecosystem:cordova"
@@ -13,6 +15,9 @@
   "author": "Apache Cordova Team",
   "license": "Apache-2.0",
   "devDependencies": {
+    "@babel/core": "^7.26.0",
+    "@babel/preset-env": "^7.26.0",
+    "babel-loader": "^8.4.1",
     "cordova-android": "^13.0.0",
     "cordova-plugin-webpack": "^1.0.5"
   },
@@ -23,5 +28,10 @@
     "platforms": [
       "android"
     ]
+  },
+  "dependencies": {
+    "@types/cordova": "^11.0.3",
+    "babel-plugin-transform-jsx": "^2.0.0",
+    "babel-plugin-transform-jsx-fragment": "^0.1.5"
   }
 }
